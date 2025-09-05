@@ -10,6 +10,7 @@ export default function ChatWindow() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const API_BASE_URL = import.meta.env.CHAT_API_BASE_URL || 'http://localhost:3001';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -27,7 +28,7 @@ export default function ChatWindow() {
     setIsTyping(true);
 
     try {
-      const res = await axios.post("http://localhost:3001/chat", {
+      const res = await axios.post(`${API_BASE_URL}/chat`, {
         message: input,
         history: messages.map((m) => ({
           role: m.sender,
