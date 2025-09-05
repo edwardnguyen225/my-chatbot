@@ -10,7 +10,10 @@ export default function ChatWindow() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const API_BASE_URL = import.meta.env.CHAT_API_BASE_URL || 'http://localhost:3001';
+  const API_BASE_URL = import.meta.env.VITE_CHAT_API_BASE_URL || 'http://localhost:3001';
+  
+  // Log the API base URL for debugging (remove in production)
+  console.log('API Base URL:', API_BASE_URL);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
