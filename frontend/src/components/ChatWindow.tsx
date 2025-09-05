@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,14 +8,23 @@ import { useChatStore } from "@/store/chatStore";
 export default function ChatWindow() {
   const { messages, addMessage } = useChatStore();
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
 
     addMessage({ sender: "user", text: input });
     setInput("");
-    setLoading(true);
+    setIsTyping(true);
 
     try {
       const res = await axios.post("http://localhost:3001/chat", {
@@ -27,14 +36,27 @@ export default function ChatWindow() {
       });
 
       addMessage({ sender: "assistant", text: res.data.reply });
-    } catch (error) {
+    } catch (error: unknown) {
+      let errorMessage = "⚠️ Oops! Something went wrong. Please try again.";
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 429) {
+          errorMessage = "⚠️ Too many requests. Please wait a moment and try again.";
+        } else if (axiosError.response?.status === 401) {
+          errorMessage = "⚠️ Authentication error. Please check your API key.";
+        }
+      } else if (!navigator.onLine) {
+        errorMessage = "⚠️ No internet connection. Please check your network.";
+      }
+      
       addMessage({
         sender: "assistant",
-        text: "⚠️ Error: Unable to get a response.",
+        text: errorMessage,
       });
       console.error("Error sending message:", error);
     } finally {
-      setLoading(false);
+      setIsTyping(false);
     }
   };
 
@@ -60,9 +82,19 @@ export default function ChatWindow() {
             {msg.text}
           </div>
         ))}
-        {loading && (
-          <p className="text-sm text-gray-400 italic">Bot is thinking...</p>
+        {isTyping && (
+          <div className="bg-gray-200 text-gray-500 p-3 rounded-xl max-w-[75%] mr-auto">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm">Bot is typing</span>
+              <div className="flex space-x-1">
+                <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
+                <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
+            </div>
+          </div>
         )}
+        <div ref={messagesEndRef} />
       </CardContent>
 
       <div className="flex items-center gap-2 border-t p-3">
@@ -73,7 +105,7 @@ export default function ChatWindow() {
           placeholder="Type your message..."
           className="flex-1"
         />
-        <Button onClick={sendMessage} disabled={loading}>
+        <Button onClick={sendMessage} disabled={isTyping}>
           Send
         </Button>
       </div>
