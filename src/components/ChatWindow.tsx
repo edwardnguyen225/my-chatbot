@@ -2,31 +2,42 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-type Message = {
-  role: "user" | "bot";
-  content: string;
-};
+import { useChatStore } from "@/store/chatStore";
 
 export default function ChatWindow() {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: "bot", content: "👋 Hi there! How can I help you today?" },
-  ]);
+  const { messages, userName, addMessage, setUserName } = useChatStore();
   const [input, setInput] = useState("");
 
   const sendMessage = () => {
     if (!input.trim()) return;
-    const newMessage: Message = { role: "user", content: input };
-    setMessages([...messages, newMessage]);
+
+    addMessage({ sender: "user", text: input });
     setInput("");
 
-    // Temporary bot reply (later we'll integrate AI)
     setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { role: "bot", content: "Got it! I'm learning 🧠" },
-      ]);
+      const botResponse = getBotResponse(input);
+      addMessage({ sender: "bot", text: botResponse });
     }, 800);
+  };
+
+  // Example bot reply (with context awareness)
+  const getBotResponse = (userMessage: string) => {
+    const message = userMessage.toLowerCase();
+
+    if (message.includes("my name is")) {
+      const name = userMessage.split("my name is")[1].trim();
+      setUserName(name);
+      return `Nice to meet you, ${name}! I'll remember your name.`;
+    }
+
+    if (message.includes("hello") || message.includes("hi")) {
+      if (userName) {
+        return `Hello ${userName}! How can I help you?`;
+      }
+      return "Hello! How can I help you?";
+    }
+
+    return "Thanks for your message! I'm a simple chatbot learning to respond.";
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -39,16 +50,16 @@ export default function ChatWindow() {
   return (
     <Card className="w-full max-w-md mx-auto h-[600px] flex flex-col rounded-2xl shadow-lg">
       <CardContent className="flex-1 overflow-y-auto space-y-3 p-4">
-        {messages.map((msg, i) => (
+        {messages.map((msg) => (
           <div
-            key={i}
+            key={msg.id}
             className={`p-3 rounded-xl max-w-[75%] ${
-              msg.role === "user"
+              msg.sender === "user"
                 ? "bg-blue-500 text-white ml-auto"
                 : "bg-gray-200 text-gray-800 mr-auto"
             }`}
           >
-            {msg.content}
+            {msg.text}
           </div>
         ))}
       </CardContent>
