@@ -1,43 +1,41 @@
 import React, { useState } from "react";
+import axios from "axios";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useChatStore } from "@/store/chatStore";
 
 export default function ChatWindow() {
-  const { messages, userName, addMessage, setUserName } = useChatStore();
+  const { messages, addMessage } = useChatStore();
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!input.trim()) return;
 
     addMessage({ sender: "user", text: input });
     setInput("");
+    setLoading(true);
 
-    setTimeout(() => {
-      const botResponse = getBotResponse(input);
-      addMessage({ sender: "bot", text: botResponse });
-    }, 800);
-  };
+    try {
+      const res = await axios.post("http://localhost:3001/chat", {
+        message: input,
+        history: messages.map((m) => ({
+          role: m.sender,
+          content: m.text,
+        })),
+      });
 
-  // Example bot reply (with context awareness)
-  const getBotResponse = (userMessage: string) => {
-    const message = userMessage.toLowerCase();
-
-    if (message.includes("my name is")) {
-      const name = userMessage.split("my name is")[1].trim();
-      setUserName(name);
-      return `Nice to meet you, ${name}! I'll remember your name.`;
+      addMessage({ sender: "bot", text: res.data.reply });
+    } catch (error) {
+      addMessage({
+        sender: "bot",
+        text: "⚠️ Error: Unable to get a response.",
+      });
+      console.error("Error sending message:", error);
+    } finally {
+      setLoading(false);
     }
-
-    if (message.includes("hello") || message.includes("hi")) {
-      if (userName) {
-        return `Hello ${userName}! How can I help you?`;
-      }
-      return "Hello! How can I help you?";
-    }
-
-    return "Thanks for your message! I'm a simple chatbot learning to respond.";
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -62,6 +60,9 @@ export default function ChatWindow() {
             {msg.text}
           </div>
         ))}
+        {loading && (
+          <p className="text-sm text-gray-400 italic">Bot is thinking...</p>
+        )}
       </CardContent>
 
       <div className="flex items-center gap-2 border-t p-3">
@@ -72,7 +73,9 @@ export default function ChatWindow() {
           placeholder="Type your message..."
           className="flex-1"
         />
-        <Button onClick={sendMessage}>Send</Button>
+        <Button onClick={sendMessage} disabled={loading}>
+          Send
+        </Button>
       </div>
     </Card>
   );
