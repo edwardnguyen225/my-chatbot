@@ -26,10 +26,10 @@ export default function ChatWindow() {
         })),
       });
 
-      addMessage({ sender: "bot", text: res.data.reply });
+      addMessage({ sender: "assistant", text: res.data.reply });
     } catch (error) {
       addMessage({
-        sender: "bot",
+        sender: "assistant",
         text: "⚠️ Error: Unable to get a response.",
       });
       console.error("Error sending message:", error);

@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 interface Message {
   id: string;
-  sender: "user" | "bot";
+  sender: "user" | "assistant";
   text: string;
 }
 
@@ -16,7 +16,7 @@ interface ChatState {
 
 const WelcomeMessage: Message = {
   id: "welcome",
-  sender: "bot",
+  sender: "assistant",
   text: "👋 Hi there! How can I help you today?",
 };
 
